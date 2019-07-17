@@ -50,6 +50,8 @@
     "react-dev-utils": "^9.0.1",
     "react-dom": "^16.8.6",
     "react-json-pretty": "^2.1.0",
+    "react-player-controls": "^1.1.0",
+    "react-rangeslider": "^2.2.0",
     "resolve": "1.10.0",
     "sass-loader": "7.1.0",
     "semver": "6.0.0",
