@@ -33,7 +33,7 @@
 }
 
 .video-js {
-  display: none !important;
+  display: inline !important;
 }
 
 pre {
