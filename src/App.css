@@ -55,6 +55,10 @@ body {
   display: inline !important;
 }
 
-pre {
-  width: 100vw;
+input {
+   width: 70vw;
+}
+
+label {
+   padding: 1rem;
 }

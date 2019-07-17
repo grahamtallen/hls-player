@@ -7,13 +7,16 @@ import './App.css';
 import get from "lodash/get"
 import JSONPretty from 'react-json-pretty';
 import JSONPrettyMon from 'react-json-pretty/dist/monikai';
+import 'react-rangeslider/lib/index.css'
 
+import Slider from 'react-rangeslider'
+import {NETWORK_STATES} from "./constants/networkStates.js"
 const defaultSource = "https://video-dev.github.io/streams/pts_shift/master.m3u8";
 
 class VideoStats extends React.Component {
 
   state = {
-    streamStats: {},
+    streamStats: {volume: 1},
     source: defaultSource,
     url: defaultSource,
     loading: false
@@ -44,16 +47,24 @@ class VideoStats extends React.Component {
     this.interval = setInterval(() => {
       const streamStats = get(this.player, "dash.stats")
       const formattedStreamStats = {}
-      formattedStreamStats["Current Source"] = streamStats.currentSource;
-      formattedStreamStats["Nework State"] = this.player.networkState();
-
+      if (!streamStats) return;
+      
       Object.keys(streamStats).map(key => {
         if (typeof streamStats[key] !== "object") {
           formattedStreamStats[key] = streamStats[key];
         } else {
-          console.table(key, streamStats[key])
+          // console.table(key, streamStats[key])
         }
       })
+      
+      formattedStreamStats["Nework State"] = NETWORK_STATES[this.player.networkState()];
+
+
+      formattedStreamStats["Current Source"] = streamStats.currentSource;
+
+      formattedStreamStats["Volume"] = this.player.volume(); // can get or set volume with this method
+
+
       this.setState({
         streamStats: formattedStreamStats
       })
@@ -87,6 +98,15 @@ class VideoStats extends React.Component {
     }, () => this.startPlayer())
   }
 
+  // setVolume = (e) => {
+  //   const value = e.target.value;
+  //   this.player.volume(value);
+  //   this.setState({streamStats: {
+  //     ...this.state.streamStats,
+  //     volume: value
+  //   }})
+  // }
+
   // wrap the player in a div with a `data-vjs-player` attribute
   // so videojs won't create additional wrapper in the DOM
   // see https://github.com/videojs/video.js/pull/3856
@@ -103,7 +123,6 @@ class VideoStats extends React.Component {
             <input value={this.state.url} onChange={this.handleInputChange} />
           </label>
           <button onClick={this.handleButtonClick}> Stream </button>
-
         <JSONPretty id="json-pretty" data={this.state.streamStats} theme={JSONPrettyMon}></JSONPretty>
 
       </div>
@@ -112,6 +131,12 @@ class VideoStats extends React.Component {
 }
 
 
+const SliderCom = () => {
+  return (
+    <Slider
+    />
+  )
+}
 
 class App extends React.Component {
   state = {
