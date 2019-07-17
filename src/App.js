@@ -22,17 +22,13 @@ class VideoStats extends React.Component {
     loading: false
   }
 
-  componentDidMount() {
-    this.startPlayer();
-  }
-
   startPlayer() {
     this.disposePlayer();
     const {videoNode} = this.props;
     if (!videoNode) return;
 
     const videoJSOptions = {
-      controls: true,
+      controls: false,
       autoplay: true,
       withCredentials: false,
       sources: [{
@@ -95,7 +91,6 @@ class VideoStats extends React.Component {
   handleInputChange = ({target}) => this.setState({url: target.value})
 
   handleButtonClick = () => {
-    console.log("url: ", this.url)
     this.setState({
       source: this.state.url
     }, () => this.startPlayer())
