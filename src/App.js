@@ -37,9 +37,11 @@ export default class VideoPlayer extends React.Component {
     this.player = videojs(this.videoNode, videoJSOptions, function onPlayerReady() {
       console.log('onPlayerReady', this)
     });
+    this.player.playsinline(true);
     this.interval = setInterval(() => {
       const streamStats = get(this.player, "dash.stats")
       const formattedStreamStats = {}
+      if (!streamStats) return;
       Object.keys(streamStats).map(key => {
         if (typeof streamStats[key] !== "object") {
           formattedStreamStats[key] = streamStats[key];
