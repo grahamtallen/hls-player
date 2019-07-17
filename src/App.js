@@ -34,6 +34,7 @@ class VideoStats extends React.Component {
     const videoJSOptions = {
       controls: true,
       autoplay: true,
+      withCredentials: false,
       sources: [{
             src: this.state.source,
             type: 'application/x-mpegURL'
@@ -84,7 +85,7 @@ class VideoStats extends React.Component {
       this.player.dispose()
     }
     if (this.interval) {
-      // this.interval && this.interval();
+      clearInterval(this.interval);
     }
     setTimeout(() => {
       this.setState({loading: false})
@@ -100,24 +101,14 @@ class VideoStats extends React.Component {
     }, () => this.startPlayer())
   }
 
-  // setVolume = (e) => {
-  //   const value = e.target.value;
-  //   this.player.volume(value);
-  //   this.setState({streamStats: {
-  //     ...this.state.streamStats,
-  //     volume: value
-  //   }})
-  // }
-
-  // wrap the player in a div with a `data-vjs-player` attribute
-  // so videojs won't create additional wrapper in the DOM
-  // see https://github.com/videojs/video.js/pull/3856
   render() {
-    if (this.state.loading || !this.props.videoNode) return (
-      <div className="loading-container">
+    let data = <JSONPretty id="json-pretty" data={this.state.streamStats} theme={JSONPrettyMon}></JSONPretty>
+    if (this.state.loading || !this.props.videoNode) {
+      data = <div className="loading-container">
         <pre>Loading</pre>
       </div>
-    )
+    }
+
     return (
       <div> 
           <label >
@@ -125,8 +116,7 @@ class VideoStats extends React.Component {
             <input value={this.state.url} onChange={this.handleInputChange} />
           </label>
           <button onClick={this.handleButtonClick}> Stream </button>
-        <JSONPretty id="json-pretty" data={this.state.streamStats} theme={JSONPrettyMon}></JSONPretty>
-
+          {data}
       </div>
     )
   }
