@@ -44,6 +44,8 @@ class VideoStats extends React.Component {
     this.player = videojs(videoNode, videoJSOptions, function onPlayerReady() {
       console.log('onPlayerReady', this)
     });
+    this.player.playsinline(true);
+
     this.interval = setInterval(() => {
       const streamStats = get(this.player, "dash.stats")
       const formattedStreamStats = {}
