@@ -8,12 +8,24 @@ import get from "lodash/get"
 import JSONPretty from 'react-json-pretty';
 import JSONPrettyMon from 'react-json-pretty/dist/monikai';
 import 'react-rangeslider/lib/index.css'
-
 import Slider from 'react-rangeslider'
 import {NETWORK_STATES} from "./constants/networkStates.js"
+import qs from "query-string";
+
 const defaultSource = "http://178.79.160.41:8080/hls/good-music.m3u8"
 
 class VideoStats extends React.Component {
+
+  componentDidMount() {
+    const search = qs.parse(window.location.search);
+    const stream = search.stream;
+    const url =  `http://178.79.160.41:8080/hls/${stream}.m3u8`;
+    this.setState({
+      url
+    })
+    console.log({url})
+    this.startPlayer();
+  }
 
   state = {
     streamStats: {volume: 1},
@@ -29,10 +41,7 @@ class VideoStats extends React.Component {
       controls: false,
       autoplay: true,
       withCredentials: false,
-      sources: [{
-            src: this.state.source,
-            type: 'application/x-mpegURL'
-        }]
+      sources: []
     }
     // instantiate Video.js
     this.player = videojs(videoNode, videoJSOptions, this.onPlayerReady);
@@ -43,7 +52,7 @@ class VideoStats extends React.Component {
 
   loadSource(sourceUrl) {
     this.player.src({
-            src: this.sourceUrl,
+            src: sourceUrl,
             type: 'application/x-mpegURL'
         })
   }
@@ -52,8 +61,8 @@ class VideoStats extends React.Component {
     this.disposePlayer();
     this.setupPlayer();
 
-    const {source} = this.state
-    this.loadSource(source)
+    const {url} = this.state
+    this.loadSource(url)
 
     this.interval = setInterval(() => { 
       const streamStats = get(this.player, "dash.stats")
