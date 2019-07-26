@@ -11,7 +11,7 @@ import 'react-rangeslider/lib/index.css'
 
 import Slider from 'react-rangeslider'
 import {NETWORK_STATES} from "./constants/networkStates.js"
-const defaultSource = "https://video-dev.github.io/streams/pts_shift/master.m3u8";
+const defaultSource = "http://178.79.160.41:8080/hls/good-music.m3u8"
 
 class VideoStats extends React.Component {
 
@@ -22,11 +22,9 @@ class VideoStats extends React.Component {
     loading: false
   }
 
-  startPlayer() {
-    this.disposePlayer();
+  setupPlayer() {
     const {videoNode} = this.props;
     if (!videoNode) return;
-
     const videoJSOptions = {
       controls: false,
       autoplay: true,
@@ -36,17 +34,32 @@ class VideoStats extends React.Component {
             type: 'application/x-mpegURL'
         }]
     }
-
     // instantiate Video.js
-    this.player = videojs(videoNode, videoJSOptions, function onPlayerReady() {
-      console.log('onPlayerReady', this)
-    });
+    this.player = videojs(videoNode, videoJSOptions, this.onPlayerReady);
+    this.player.isAudio(true);
+    // TODO look up the preload attribute
     this.player.playsinline(true);
+  }
 
-    this.interval = setInterval(() => {
+  loadSource(sourceUrl) {
+    this.player.src({
+            src: this.sourceUrl,
+            type: 'application/x-mpegURL'
+        })
+  }
+
+  startPlayer() {
+    this.disposePlayer();
+    this.setupPlayer();
+
+    const {source} = this.state
+    this.loadSource(source)
+
+    this.interval = setInterval(() => { 
       const streamStats = get(this.player, "dash.stats")
+
+      if (!streamStats) return
       const formattedStreamStats = {}
-      if (!streamStats) return;
       
       Object.keys(streamStats).map(key => {
         if (typeof streamStats[key] !== "object") {
@@ -67,12 +80,19 @@ class VideoStats extends React.Component {
       this.setState({
         streamStats: formattedStreamStats
       })
-    }, 2000)
+  }, 2000)
+
+
   }
 
   // destroy player on unmount
   componentWillUnmount() {
     this.disposePlayer();
+  }
+
+  onPlayerReady() {
+    this.setState({playerReady: true})
+    console.log("Player ready")
   }
 
   disposePlayer = () => {
@@ -97,8 +117,9 @@ class VideoStats extends React.Component {
   }
 
   render() {
-    let data = <JSONPretty id="json-pretty" data={this.state.streamStats} theme={JSONPrettyMon}></JSONPretty>
-    if (this.state.loading || !this.props.videoNode) {
+    const { streamStats, playerReady, loading } = this.state;
+    let data = <JSONPretty id="json-pretty" data={streamStats} theme={JSONPrettyMon}></JSONPretty>
+    if (loading || !this.props.videoNode) {
       data = <div className="loading-container">
         <pre>Loading</pre>
       </div>
@@ -112,6 +133,9 @@ class VideoStats extends React.Component {
           </label>
           <button onClick={this.handleButtonClick}> Stream </button>
           {data}
+          <div>
+            <pre>Player {playerReady ? "Initializing" : "Ready"}</pre>
+          </div>
       </div>
     )
   }
@@ -139,7 +163,7 @@ class App extends React.Component {
   render() {
     return <div>
         <div data-vjs-player>
-          <video autoPlay ref={this.setRef} className="video-js"></video>
+          <audio autoPlay ref={this.setRef} className="video-js"></audio>
         </div>
       {this.state.videoNode && <VideoStats videoNode={this.state.videoNode} />}
     </div>
