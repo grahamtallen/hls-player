@@ -59,8 +59,10 @@ class VideoStats extends React.Component {
         this.startPlayer();
         break;
       case 404: 
+        this.invalidPlaylist = true;
         setTimeout(this.testStream, 2000);
         this.disposePlayer();
+        this.disposeInterval();
         this.setState({
           streamStats: {
             ["Trying to connect to stream"]: "True",
@@ -89,9 +91,9 @@ class VideoStats extends React.Component {
 
   onRetryPlaylist = () => {
     console.log("On retry playlist")
-    // this.handlePlaylistResponse({
-    //   status: 404
-    // })
+    this.handlePlaylistResponse({
+      status: 404
+    })
   }
 
 
@@ -134,7 +136,7 @@ class VideoStats extends React.Component {
 
     this.interval = setInterval(() => { 
       console.log(this);
-      if (this.testingStream) return;
+      if (this.pl) return;
       const streamStats = get(this, "player.tech") && this.player.tech().hls.stats;
       console.log({streamStats});
       if (!streamStats) return
