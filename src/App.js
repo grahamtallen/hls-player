@@ -143,12 +143,12 @@ class VideoStats extends React.Component {
   statsTick = () => { 
       const context = this;
       const streamStats = get(this.player, "hls.stats");
-      if (!streamStats) return
+      if (!this.player || !streamStats) return
       // check network 
 
       if (context.player && NETWORK_STATES[context.player.networkState()] === "NETWORK_NO_SOURCE") {
           clearInterval(context.interval);
-          this.onRetryPlaylist();
+          // this.onRetryPlaylist();
           console.warn("network error detected during tick: NETWORK_NO_SOURCE")
           return;
       };
