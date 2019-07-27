@@ -60,40 +60,37 @@ class VideoStats extends React.Component {
         break;
       case 404: 
         this.invalidPlaylist = true;
-        setTimeout(this.testStream, 2000);
-        this.disposePlayer();
-        this.disposeInterval();
         this.setState({
           streamStats: {
             ["Trying to connect to stream"]: "True",
             ["Response Status"]: validStatus 
           }
+        }, () => {
+          setTimeout(this.testStream, 2000)
         })
         break;
       default: 
-        setTimeout(this.testStream, 3000);
         this.disposePlayer();
         console.warn("Unhandled response status: ", response.message);
         const responseMessage = response.message;
         this.setState({
           streamStats: {
-            ["Cannot connect to server reason:"]: responseMessage,
+            ["Trying to connect to stream"]: "False",
+            ["Response message"]: responseMessage,
           }
         })
         if (responseMessage === "Failed to fetch") {
-          console.warn()
+          console.warn("Failed to fetch, server is probably down")
         }
-
-        console.table(response)
         break;
     }
   }
 
   onRetryPlaylist = () => {
-    console.log("On retry playlist")
-    this.handlePlaylistResponse({
-      status: 404
-    })
+    console.log("Disposing player and waiting for a valid playlist")
+    this.disposeInterval();
+    this.disposePlayer();
+    this.testStream();
   }
 
 
@@ -116,30 +113,46 @@ class VideoStats extends React.Component {
 
   loadSource(sourceUrl) {
     if (this.player) {
-      this.player.src({
+      try {
+        this.player.src({
             src: sourceUrl,
             type: 'application/x-mpegURL'
         })
+        this.player.tech().on('retryplaylist', this.onRetryPlaylist);
+      } catch (e) {
+        console.warn("Error setting source");
+        this.disposePlayer();
+        this.disposeInterval();
+        this.testStream();
+      }
     } else {
-      console.warn("call setupPlayer before loading a source")
+      console.warn("Call setupPlayer() before loading a source")
     }
   }
 
   startPlayer = () => {
-    this.disposeInterval();
+    console.log("Starting player and stats logging")
     const {url} = this.state;
     const playerReady = () => {
-      get(this, "player.tech") && this.player.tech().on('retryplaylist', this.onRetryPlaylist)
       this.loadSource(url);
     }
     this.setupPlayer(playerReady);
+    this.interval = setInterval(this.statsTick, 2000)
+  }
 
-    this.interval = setInterval(() => { 
-      console.log(this);
-      if (this.pl) return;
-      const streamStats = get(this, "player.tech") && this.player.tech().hls.stats;
-      console.log({streamStats});
+  statsTick = () => { 
+      const context = this;
+      const streamStats = get(this.player, "hls.stats");
       if (!streamStats) return
+      // check network 
+
+      if (context.player && NETWORK_STATES[context.player.networkState()] === "NETWORK_NO_SOURCE") {
+          clearInterval(context.interval);
+          this.onRetryPlaylist();
+          console.warn("network error detected during tick: NETWORK_NO_SOURCE")
+          return;
+      };
+
       const formattedStreamStats = {}
       
       Object.keys(streamStats).map(key => {
@@ -150,20 +163,12 @@ class VideoStats extends React.Component {
         }
       })
       
-      formattedStreamStats["Nework State"] = NETWORK_STATES[this.player.networkState()];
-
-
       formattedStreamStats["Current Source"] = streamStats.currentSource;
-
       formattedStreamStats["Volume"] = this.player.volume(); // can get or set volume with this method
-
 
       this.setState({
         streamStats: formattedStreamStats
       })
-  }, 2000)
-
-
   }
 
   // destroy player on unmount
@@ -177,10 +182,10 @@ class VideoStats extends React.Component {
     if (this.player) {
       this.player.dispose()
     }
+    this.player = null;
   }
 
   disposeInterval = () => {
-    console.log(this.interval, "interval")
     if (this.interval) {
       clearInterval(this.interval);
     }
