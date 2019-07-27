@@ -12,29 +12,90 @@ import Slider from 'react-rangeslider'
 import {NETWORK_STATES} from "./constants/networkStates.js"
 import qs from "query-string";
 
-const defaultSource = "http://178.79.160.41:8080/hls/good-music.m3u8"
+
+const search = qs.parse(window.location.search);
+const stream = search && search.stream;
+let defaultSource = "http://127.0.0.1:8887/iPIELZ1wt/index.m3u8";
+
+// if (stream) {
+//   defaultSource = `http://178.79.160.41:8080/hls/${stream}.m3u8`;
+// }
 
 class VideoStats extends React.Component {
 
-  componentDidMount() {
-    const search = qs.parse(window.location.search);
-    const stream = search.stream;
-    const url =  `http://178.79.160.41:8080/hls/${stream}.m3u8`;
-    this.setState({
-      url
-    })
-    console.log({url})
-    this.startPlayer();
-  }
-
   state = {
-    streamStats: {volume: 1},
-    source: defaultSource,
     url: defaultSource,
-    loading: false
+    validPlaylist: false,
+    loading: false,
+    streamStats: {volume: 1},
   }
 
-  setupPlayer() {
+  componentDidMount() {
+    this.testStream();
+  }
+
+  testStream = () => {
+      if (this.testingStream) return;
+      this.testingStream = true;
+      const { url } = this.state;
+      const request = new Request(url);
+      try {
+        fetch(request)
+          .then(this.handlePlaylistResponse)
+          .catch(this.handlePlaylistResponse)
+      } catch (e) {
+        console.warn("testStream", e);
+        this.handlePlaylistResponse();
+      }
+
+  }
+
+  handlePlaylistResponse = (response = {}) => {
+    this.testingStream = false;
+    const validStatus = response && response.status;  
+    this.setState({playlistResponse: validStatus});
+    switch (validStatus) {
+      case 200: 
+        this.startPlayer();
+        break;
+      case 404: 
+        setTimeout(this.testStream, 2000);
+        this.disposePlayer();
+        this.setState({
+          streamStats: {
+            ["Trying to connect to stream"]: "True",
+            ["Response Status"]: validStatus 
+          }
+        })
+        break;
+      default: 
+        setTimeout(this.testStream, 3000);
+        this.disposePlayer();
+        console.warn("Unhandled response status: ", response.message);
+        const responseMessage = response.message;
+        this.setState({
+          streamStats: {
+            ["Cannot connect to server reason:"]: responseMessage,
+          }
+        })
+        if (responseMessage === "Failed to fetch") {
+          console.warn()
+        }
+
+        console.table(response)
+        break;
+    }
+  }
+
+  onRetryPlaylist = () => {
+    console.log("On retry playlist")
+    // this.handlePlaylistResponse({
+    //   status: 404
+    // })
+  }
+
+
+  setupPlayer(playerReady) {
     const {videoNode} = this.props;
     if (!videoNode) return;
     const videoJSOptions = {
@@ -44,29 +105,38 @@ class VideoStats extends React.Component {
       sources: []
     }
     // instantiate Video.js
-    this.player = videojs(videoNode, videoJSOptions, this.onPlayerReady);
+    this.player = videojs(videoNode, videoJSOptions, playerReady);
     this.player.isAudio(true);
     // TODO look up the preload attribute
     this.player.playsinline(true);
+
   }
 
   loadSource(sourceUrl) {
-    this.player.src({
+    if (this.player) {
+      this.player.src({
             src: sourceUrl,
             type: 'application/x-mpegURL'
         })
+    } else {
+      console.warn("call setupPlayer before loading a source")
+    }
   }
 
-  startPlayer() {
-    this.disposePlayer();
-    this.setupPlayer();
-
-    const {url} = this.state
-    this.loadSource(url)
+  startPlayer = () => {
+    this.disposeInterval();
+    const {url} = this.state;
+    const playerReady = () => {
+      get(this, "player.tech") && this.player.tech().on('retryplaylist', this.onRetryPlaylist)
+      this.loadSource(url);
+    }
+    this.setupPlayer(playerReady);
 
     this.interval = setInterval(() => { 
-      const streamStats = get(this.player, "dash.stats")
-
+      console.log(this);
+      if (this.testingStream) return;
+      const streamStats = get(this, "player.tech") && this.player.tech().hls.stats;
+      console.log({streamStats});
       if (!streamStats) return
       const formattedStreamStats = {}
       
@@ -97,36 +167,33 @@ class VideoStats extends React.Component {
   // destroy player on unmount
   componentWillUnmount() {
     this.disposePlayer();
+    this.disposeInterval();
   }
 
-  onPlayerReady() {
-    this.setState({playerReady: true})
-    console.log("Player ready")
-  }
 
   disposePlayer = () => {
-    this.setState({loading: true})
     if (this.player) {
       this.player.dispose()
     }
+  }
+
+  disposeInterval = () => {
+    console.log(this.interval, "interval")
     if (this.interval) {
       clearInterval(this.interval);
     }
-    setTimeout(() => {
-      this.setState({loading: false})
-    }, 500)
   }
 
   handleInputChange = ({target}) => this.setState({url: target.value})
 
   handleButtonClick = () => {
     this.setState({
-      source: this.state.url
+      url: this.state.url
     }, () => this.startPlayer())
   }
 
   render() {
-    const { streamStats, playerReady, loading } = this.state;
+    const { streamStats, loading, playlistResponse } = this.state;
     let data = <JSONPretty id="json-pretty" data={streamStats} theme={JSONPrettyMon}></JSONPretty>
     if (loading || !this.props.videoNode) {
       data = <div className="loading-container">
@@ -143,7 +210,7 @@ class VideoStats extends React.Component {
           <button onClick={this.handleButtonClick}> Stream </button>
           {data}
           <div>
-            <pre>Player {playerReady ? "Initializing" : "Ready"}</pre>
+            <pre>Stream status {playlistResponse}</pre>
           </div>
       </div>
     )
