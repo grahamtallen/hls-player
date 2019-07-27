@@ -15,10 +15,10 @@ import qs from "query-string";
 
 const search = qs.parse(window.location.search);
 const stream = search && search.stream;
-let defaultSource = "http://127.0.0.1:8887/iPIELZ1wt/index.m3u8";
+let defaultSource = "";
 
 if (stream) {
-  defaultSource = `http://178.79.160.41:8080/hls/${stream}.m3u8`;
+  defaultSource = `${window.location.origin}/hls/${stream}.m3u8`;
 }
 
 class VideoStats extends React.Component {
