@@ -56,6 +56,10 @@ body {
   height: 0;
 }
 
+.vjs-loading-spinner {
+  display: none;
+}
+
 input {
    width: 70vw;
 }

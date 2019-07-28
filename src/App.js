@@ -15,11 +15,11 @@ import qs from "query-string";
 
 const search = qs.parse(window.location.search);
 const stream = search && search.stream;
-let defaultSource = "";
+let defaultSource = "http://127.0.0.1:8887/BpDtDk2GF/index.m3u8";
 
-if (stream) {
-  defaultSource = `${window.location.origin}/hls/${stream}.m3u8`;
-}
+// if (stream) {
+//   defaultSource = `${window.location.origin}/hls/${stream}.m3u8`;
+// }
 
 class VideoStats extends React.Component {
 
@@ -27,7 +27,10 @@ class VideoStats extends React.Component {
     url: defaultSource,
     validPlaylist: false,
     loading: false,
-    streamStats: {volume: 1},
+    streamStats: {
+      ready: false,
+      online: false
+    },
   }
 
   componentDidMount() {
@@ -56,12 +59,19 @@ class VideoStats extends React.Component {
     this.setState({playlistResponse: validStatus});
     switch (validStatus) {
       case 200: 
-        this.startPlayer();
+        this.setState({
+          streamStats: {
+            ...this.state.streamStats,
+            online: true,
+            ready: true,
+          }
+        }, this.startPlayer)
         break;
       case 404: 
         this.invalidPlaylist = true;
         this.setState({
           streamStats: {
+            ...this.state.streamStats,
             ["Trying to connect to stream"]: "True",
             ["Response Status"]: validStatus 
           }
@@ -75,6 +85,7 @@ class VideoStats extends React.Component {
         const responseMessage = response.message;
         this.setState({
           streamStats: {
+            ...this.state.streamStats,
             ["Trying to connect to stream"]: "False",
             ["Response message"]: responseMessage,
           }
@@ -86,11 +97,17 @@ class VideoStats extends React.Component {
     }
   }
 
-  onRetryPlaylist = () => {
-    console.log("Disposing player and waiting for a valid playlist")
-    this.disposeInterval();
-    this.disposePlayer();
-    this.testStream();
+  onRetryPlaylist = (arg) => {
+    console.log("Retrying playlist")
+    this.setState({
+      streamStats: {
+        ...this.state.streamStats,
+        ready: false
+      }
+    })
+    // this.disposeInterval();
+    // this.disposePlayer();
+    // this.testStream();
   }
 
 
@@ -99,7 +116,7 @@ class VideoStats extends React.Component {
     if (!videoNode) return;
     const videoJSOptions = {
       controls: false,
-      autoplay: true,
+      autoplay: false,
       withCredentials: false,
       sources: []
     }
@@ -141,34 +158,51 @@ class VideoStats extends React.Component {
   }
 
   statsTick = () => { 
+      console.log("Tick")
       const context = this;
-      const streamStats = get(this.player, "hls.stats");
-      if (!this.player || !streamStats) return
+      // const streamStats = get(this.player, "hls.stats");
+      if (!this.player) return
       // check network 
-
-      if (context.player && NETWORK_STATES[context.player.networkState()] === "NETWORK_NO_SOURCE") {
-          clearInterval(context.interval);
-          // this.onRetryPlaylist();
-          console.warn("network error detected during tick: NETWORK_NO_SOURCE")
-          return;
-      };
-
-      const formattedStreamStats = {}
-      
-      Object.keys(streamStats).map(key => {
-        if (typeof streamStats[key] !== "object") {
-          formattedStreamStats[key] = streamStats[key];
-        } else {
-          // console.table(key, streamStats[key])
+      this.setState({
+        streamStats: {
+          ready: this.isReady(),
+          online: this.isOnline()
         }
       })
-      
-      formattedStreamStats["Current Source"] = streamStats.currentSource;
-      formattedStreamStats["Volume"] = this.player.volume(); // can get or set volume with this method
 
-      this.setState({
-        streamStats: formattedStreamStats
-      })
+  //     if (context.player && NETWORK_STATES[context.player.networkState()] === "NETWORK_NO_SOURCE") {
+  //         clearInterval(context.interval);
+  //         // this.onRetryPlaylist();
+  //         console.warn("network error detected during tick: NETWORK_NO_SOURCE")
+  //         return;
+  //     };
+
+  //     const formattedStreamStats = {}
+      
+  //     Object.keys(streamStats).map(key => {
+  //       if (typeof streamStats[key] !== "object") {
+  //         formattedStreamStats[key] = streamStats[key];
+  //       } else {
+  //         // console.table(key, streamStats[key])
+  //       }
+  //     })
+      
+  //     formattedStreamStats["Current Source"] = streamStats.currentSource;
+  //     formattedStreamStats["Volume"] = this.player.volume(); // can get or set volume with this method
+
+  //     this.setState({
+  //       streamStats: formattedStreamStats
+  //     })
+  // }
+  }
+
+  isReady = () => {
+    console.log("readystate: ", this.player.readyState());
+    return this.player && this.player.readyState() === 4;
+  }
+
+  isOnline = () => {
+    return this.player && this.player.readyState() > 0;
   }
 
   // destroy player on unmount
@@ -191,30 +225,35 @@ class VideoStats extends React.Component {
     }
   }
 
-  handleInputChange = ({target}) => this.setState({url: target.value})
-
-  handleButtonClick = () => {
-    this.setState({
-      url: this.state.url
-    }, () => this.startPlayer())
+  handlePlayClick = () => {
+    this.player && this.player.play();
+    // this.setState({
+    //   url: this.state.url
+    // }, () => this.startPlayer())
   }
 
+  handlePauseclick = () => {
+    this.player && this.player.pause();
+    // this.setState({
+    //   url: this.state.url
+    // }, () => this.startPlayer())
+  }
   render() {
-    const { streamStats, loading, playlistResponse } = this.state;
+    const { streamStats = {}, loading, playlistResponse } = this.state;
     let data = <JSONPretty id="json-pretty" data={streamStats} theme={JSONPrettyMon}></JSONPretty>
     if (loading || !this.props.videoNode) {
       data = <div className="loading-container">
         <pre>Loading</pre>
       </div>
     }
-
+    console.log({streamStats})
     return (
       <div> 
           <label >
-            Url: 
-            <input value={this.state.url} onChange={this.handleInputChange} />
+            Url: {this.state.url}
           </label>
-          <button onClick={this.handleButtonClick}> Stream </button>
+          <button onClick={this.handlePlayClick}> Play </button>
+          <button  onClick={this.handlePauseclick}> Pause </button>
           {data}
           <div>
             <pre>Stream status {playlistResponse}</pre>
@@ -246,7 +285,7 @@ class App extends React.Component {
   render() {
     return <div>
         <div data-vjs-player>
-          <audio autoPlay ref={this.setRef} className="video-js"></audio>
+          <audio ref={this.setRef} className="video-js"></audio>
         </div>
       {this.state.videoNode && <VideoStats videoNode={this.state.videoNode} />}
     </div>
