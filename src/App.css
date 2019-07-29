@@ -12,6 +12,15 @@ body {
   pointer-events: none;
 }
 
+.app-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    justify-content: center;
+    align-items: center;
+}
+
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
@@ -49,6 +58,19 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+button {
+    width: 70vw;
+    height: 6vh;
+    background: black;
+    color: white;
+    margin: 10px;
+    border-radius: 9px;
+}
+
+button:disabled {
+  opacity:  0.5;
 }
 
 .video-js {

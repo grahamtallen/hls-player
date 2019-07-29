@@ -15,11 +15,11 @@ import qs from "query-string";
 
 const search = qs.parse(window.location.search);
 const stream = search && search.stream;
-let defaultSource = "http://127.0.0.1:8887/BpDtDk2GF/index.m3u8";
+let defaultSource = "http://127.0.0.1:8887/PMI18kRYY/index.m3u8";
 
-// if (stream) {
-//   defaultSource = `${window.location.origin}/hls/${stream}.m3u8`;
-// }
+if (stream) {
+  defaultSource = `${window.location.origin}/hls/${stream}.m3u8`;
+}
 
 class VideoStats extends React.Component {
 
@@ -99,13 +99,13 @@ class VideoStats extends React.Component {
 
   onRetryPlaylist = (arg) => {
     console.log("Retrying playlist")
-    this.setState({
-      streamStats: {
-        ...this.state.streamStats,
-        ready: false
-      }
-    })
-    // this.disposeInterval();
+    // this.setState({
+    //   streamStats: {
+    //     ...this.state.streamStats,
+    //     ready: false
+    //   }
+    // })
+    this.disposeInterval();
     // this.disposePlayer();
     // this.testStream();
   }
@@ -163,12 +163,25 @@ class VideoStats extends React.Component {
       // const streamStats = get(this.player, "hls.stats");
       if (!this.player) return
       // check network 
-      this.setState({
-        streamStats: {
-          ready: this.isReady(),
-          online: this.isOnline()
-        }
-      })
+      if (!this.isPlaying) {
+        this.setState({
+          streamStats: {
+            clickPlay: "Click Play to start streaming!",
+            ready: true,
+            online: true
+          }
+        })
+      } else {
+        this.setState({
+          streamStats: {
+            ready: context.isReady(),
+            online: context.isOnline(),
+            networkState: context.player && NETWORK_STATES[context.player.networkState()],
+            readyState: context.player && context.player.readyState(),
+          }
+        })
+      }
+
 
   //     if (context.player && NETWORK_STATES[context.player.networkState()] === "NETWORK_NO_SOURCE") {
   //         clearInterval(context.interval);
@@ -226,13 +239,12 @@ class VideoStats extends React.Component {
   }
 
   handlePlayClick = () => {
+    this.isPlaying = true;
     this.player && this.player.play();
-    // this.setState({
-    //   url: this.state.url
-    // }, () => this.startPlayer())
   }
 
   handlePauseclick = () => {
+    this.isPlaying = false;
     this.player && this.player.pause();
     // this.setState({
     //   url: this.state.url
@@ -248,12 +260,12 @@ class VideoStats extends React.Component {
     }
     console.log({streamStats})
     return (
-      <div> 
+      <div className="app-container"> 
           <label >
-            Url: {this.state.url}
+            {this.state.url}
           </label>
-          <button onClick={this.handlePlayClick}> Play </button>
-          <button  onClick={this.handlePauseclick}> Pause </button>
+          <button disabled={playlistResponse !== 200} onClick={this.handlePlayClick}> Play </button>
+          <button disabled={playlistResponse !== 200} onClick={this.handlePauseclick}> Pause </button>
           {data}
           <div>
             <pre>Stream status {playlistResponse}</pre>
