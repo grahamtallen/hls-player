@@ -3,20 +3,22 @@
   padding: 0 0.3rem;
 	height: 1.5rem;
 	border-radius: 5px;
-	animation: placeholderShimmer 1.5s infinite;
+  &.live {
+    animation: placeholderShimmer 1.8s infinite;
+  }
 }
 
 @keyframes placeholderShimmer {
   0% {
-    opacity: 0.5;
+    opacity: 0.2;
   }
-  
+
   50% {
-    opacity: 1; 
+    opacity: 1;
   }
 
   100% {
-    opacity: 0.5; 
+    opacity: 0.2; 
   }
 }
 
