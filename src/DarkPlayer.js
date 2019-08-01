@@ -51,7 +51,27 @@ const Info = () => {
 
 class DarkPlayer extends Component {
 
+	state = {
+		disabled: true,
+		loading: true,
+		streamError: false
+	}
+
 	streamsTested = 0;
+
+	componentDidMount() {
+		startTime();
+		this.testStream();
+	}
+
+	componentDidUpdate() {
+		const { videoNode } = this.props;
+		if (videoNode) {
+			// this.testStream();
+		}
+	}
+
+
 
 	testStream = () => {
 	  const request = new Request(defaultSource);
@@ -101,17 +121,6 @@ class DarkPlayer extends Component {
 	        }
 	        break;
 	    }
-  }
-
-	state = {
-		disabled: true,
-		loading: true,
-		streamError: false
-	}
-
-	componentDidMount() {
-		startTime();
-		this.testStream();
 	}
 
 	render() {
@@ -145,4 +154,27 @@ function checkTime(i) {
   return i;
 }
 
-export default DarkPlayer
+class App extends Component {
+	state = {
+		videoNode: null
+	}
+
+	setRef = (videoNode) => {
+		if (!this.setVideoNode) {
+			console.log(videoNode)
+		  this.setVideoNode = true;
+		  this.setState({videoNode})
+		}
+	}
+
+	render() {
+		return (
+			<div className="dark-mode-container centered">
+				<DarkPlayer videoNode={this.state.videoNode} />
+				<audio ref={this.setRef} className="video-js"></audio>
+			</div>
+		)
+	}
+}
+
+export default App
