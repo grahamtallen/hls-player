@@ -17,13 +17,22 @@
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
 	border: 2px solid #FFFFFF;
-	width: 15vw;
-	height: 15vw;
+	width: 17vw;
+	height: 17vw;
+	max-width: 130px;
+    max-height: 130px;
 	margin: 2vh;
 }
 
 .info-row {
 	font-size: 1.5rem;
+	flex-direction: column;
+	.text {
+		font-size: 0.9rem;
+		color: #FFFFFF;
+
+		opacity: 0.7;
+	}
 }
 
 
@@ -55,6 +64,12 @@
 .top > div {
     padding: 1.5rem;
     flex-direction: column;
+    &.left {
+        align-items: flex-end;
+    }
+    &.right {
+        align-items: flex-end;
+    }
 }
 
 .invisible {
