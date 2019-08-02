@@ -107,7 +107,7 @@ class DarkPlayer extends Component {
 	        this.startPlayer();
 	        break;
 	      case 404: 
-	      	if (this.streamsTested < 5) {
+	      	if (this.streamsTested < 15) {
 
 	      		setTimeout(this.testStream, 1000)
 	      		this.streamsTested++
