@@ -26,6 +26,7 @@
 	max-width: 120px;
     max-height: 120px;
 	margin: 2vh;
+	cursor: pointer;
 	svg {
 		width: 25%;
 		height: 25%;
@@ -88,5 +89,14 @@
 
 .invisible {
 	opacity: 0;
+}
+
+.video-js {
+  display: none !important;
+  height: 0;
+}
+
+.vjs-loading-spinner {
+  display: none;
 }
 

@@ -1,7 +1,9 @@
 import "./DarkPlayer.scss";
 import React, { Component } from "react";
-import { Pause } from "./Buttons"
+import { Pause, Play } from "./Buttons"
 import StatusPill from "./StatusPill.js";
+import videojs from "video.js";
+
 import dayjs from "dayjs";
 import AdvancedFormat from 'dayjs/plugin/advancedFormat' // load on demand
 dayjs.extend(AdvancedFormat) // use plugin
@@ -17,12 +19,12 @@ if (!testing) {
 
 
 const TopBar = (props) => {
-	const { invisible } = props;
+	const { invisible, duration } = props;
 	return (
 		<div className={`top centered ${invisible && "invisible"}`}>
 			<div className="left datum-container centered">
 				<span className="title">Duration</span>
-				<span className="datum" id="time">00:00</span>
+				<span className="datum">{sToDuration(duration)}</span>
 			</div>
 			<div className="right datum-container centered">
 				<span className="title">Status</span>
@@ -32,10 +34,10 @@ const TopBar = (props) => {
 	)
 }
 
-const Button = ({disabled = false}) => {
+const Button = ({disabled = false, onClick, isPlaying}) => {
 	return (
-		<div className={`circle-container centered ${disabled && "disabled"}`}>
-			<Pause width="15" height="19"/>
+		<div onClick={onClick} className={`circle-container centered ${disabled && "disabled"}`}>
+			{isPlaying ? <Pause width="15" height="19"/> : <Play />}
 		</div>	
 	)
 }
@@ -54,24 +56,17 @@ class DarkPlayer extends Component {
 	state = {
 		disabled: true,
 		loading: true,
-		streamError: false
+		streamError: false,
+		isPlaying: false,
+		duration: 0,
 	}
 
 	streamsTested = 0;
+	player = null;
 
 	componentDidMount() {
-		startTime();
 		this.testStream();
 	}
-
-	componentDidUpdate() {
-		const { videoNode } = this.props;
-		if (videoNode) {
-			// this.testStream();
-		}
-	}
-
-
 
 	testStream = () => {
 	  const request = new Request(defaultSource);
@@ -87,13 +82,14 @@ class DarkPlayer extends Component {
 
 	handlePlaylistResponse = (response = {}) => {
 	    const validStatus = response.status; 
-	    console.log(validStatus) 
+	    console.log("response: ", response) 
 	    switch (validStatus) {
 	      case 200: 
 	        this.setState({
 	        	disabled: false,
-	        	loading: false
+	        	loading: false 
 	        })
+	        this.startPlayer();
 	        break;
 	      case 404: 
 	      	if (this.streamsTested < 20) {
@@ -123,6 +119,66 @@ class DarkPlayer extends Component {
 	    }
 	}
 
+	startPlayer = () => {
+		const playerReady = () => {
+		  this.loadSource(defaultSource);
+		}
+		this.setupPlayer(playerReady);
+	}
+
+	setupPlayer(playerReady) {
+		const {videoNode} = this.props;
+		if (!videoNode) return;
+		const videoJSOptions = {
+		  controls: false,
+		  autoplay: false,
+		  withCredentials: false,
+		  sources: []
+		}
+		// instantiate Video.js
+		this.player = videojs(videoNode, videoJSOptions, playerReady);
+		this.player.isAudio(true);
+		// TODO look up the preload attribute
+		this.player.playsinline(true);
+		this.checkTime();
+	}
+
+	loadSource(sourceUrl) {
+		if (this.player) {
+		  try {
+		    this.player.src({
+		        src: sourceUrl,
+		        type: 'application/x-mpegURL'
+		    })
+		  } catch (e) {
+		    console.warn("Error setting source");
+		  }
+		} else {
+		  console.warn("Call setupPlayer() before loading a source")
+		}
+	}
+
+	handleButtonClick = () => {
+		const { isPlaying } = this.state
+		this.setState({
+			isPlaying: !isPlaying
+		})
+		if (this.player) {
+			isPlaying ? this.player.pause() : this.player.play()
+		}
+	}
+
+	checkTime = () => {
+		const { player } = this;
+		if (player) {
+			const duration = player.currentTime();
+			this.setState({
+				duration: Math.floor(duration)
+			})
+		} 	
+		var t = setTimeout(() => this.checkTime(player), 500);
+	}
+
 	render() {
 		const { disabled } = this.state;
 		return (
@@ -130,7 +186,7 @@ class DarkPlayer extends Component {
 				<TopBar {...this.state} />
 				<div className={`middle centered ${disabled && "disabled"}`}>
 					<Info {...this.state}/>
-					<Button {...this.state}/>
+					<Button {...this.state} onClick={this.handleButtonClick}/>
 				</div>	
 				<TopBar invisible  {...this.state}/>
 			</div>
@@ -138,21 +194,6 @@ class DarkPlayer extends Component {
 	}
 }
 
-function startTime() {
-  var today = new Date();
-  var h = today.getHours();
-  var m = today.getMinutes();
-  var s = today.getSeconds();
-  m = checkTime(m);
-  s = checkTime(s);
-  document.getElementById('time').innerHTML =
-  h + ":" + m + ":" + s;
-  var t = setTimeout(startTime, 500);
-}
-function checkTime(i) {
-  if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
-  return i;
-}
 
 class App extends Component {
 	state = {
@@ -161,7 +202,6 @@ class App extends Component {
 
 	setRef = (videoNode) => {
 		if (!this.setVideoNode) {
-			console.log(videoNode)
 		  this.setVideoNode = true;
 		  this.setState({videoNode})
 		}
@@ -175,6 +215,21 @@ class App extends Component {
 			</div>
 		)
 	}
+}
+
+// To have leading zero digits in strings.
+function pad(num, size) {
+    var s = num + "";
+    while (s.length < size) s = "0" + s;
+    return s;
+}
+
+// ms to time/duration
+const sToDuration = function(seconds){
+    var hh = Math.floor(seconds / 3600);
+    const mm = Math.floor(seconds / 60) % 60;
+    const ss = Math.floor(seconds) % 60;
+    return pad(hh,2)+':'+pad(mm,2)+':'+pad(ss,2);
 }
 
 export default App

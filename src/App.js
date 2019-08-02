@@ -125,7 +125,6 @@ class VideoStats extends React.Component {
     this.player.isAudio(true);
     // TODO look up the preload attribute
     this.player.playsinline(true);
-
   }
 
   loadSource(sourceUrl) {

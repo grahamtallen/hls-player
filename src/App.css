@@ -74,7 +74,7 @@ button:disabled {
 }
 
 .video-js {
-  display: inline !important;
+  display: none !important;
   height: 0;
 }
 

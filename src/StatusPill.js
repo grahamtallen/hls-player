@@ -10,8 +10,8 @@ export default ({disabled, loading, streamError}) => {
 		text = "loading";
 	}
 	if (streamError) {
-		color = "red";
-		text = "error";
+		color = "gray";
+		text = "offline";
 	}
 	return <div 
 			className={`status-pill-container centered ${text}`} 
