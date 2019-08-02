@@ -65,6 +65,14 @@
 	justify-content: space-between;
 }
 
+.bottom {
+	width: 100%;
+	flex-direction: row;
+	justify-content: centered;
+	height: 10vh;
+}
+
+
 .top > div {
     padding: 1.5rem;
     flex-direction: column;
@@ -85,6 +93,10 @@
     &.right {
         align-items: flex-end;
     }
+}
+
+.support {
+	opacity: 0.5 !important;
 }
 
 .invisible {

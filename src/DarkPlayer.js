@@ -12,7 +12,7 @@ const { pathname = "/" } = location;
 
 const streamName = pathname.slice(1, pathname.length)
 let defaultSource = `http://127.0.0.1:8887/${streamName}/index.m3u8`;
-const testing = true;
+const testing = window.location.origin.includes("localhost");
 if (!testing) {
   defaultSource = `${window.location.origin}/hls/${streamName}.m3u8`;
 }
@@ -33,6 +33,18 @@ const TopBar = (props) => {
 		</div>
 	)
 }
+
+const BottomBar = (props) => {
+	const { streamError } = props;
+	return (
+		<div className={`bottom centered`}>
+			<div className="datum-container centered">
+				{streamError && <a href="mailto:graham@gramrphone.live" className="title support">Support</a>}
+			</div>
+		</div>
+	)
+}
+
 
 const Button = ({disabled = false, onClick, isPlaying}) => {
 	return (
@@ -82,7 +94,6 @@ class DarkPlayer extends Component {
 
 	handlePlaylistResponse = (response = {}) => {
 	    const validStatus = response.status; 
-	    console.log("response: ", response) 
 	    switch (validStatus) {
 	      case 200: 
 	        this.setState({
@@ -94,7 +105,7 @@ class DarkPlayer extends Component {
 	      case 404: 
 	      	if (this.streamsTested < 20) {
 
-	      		setTimeout(this.testStream, 2000)
+	      		setTimeout(this.testStream, 1000)
 	      		this.streamsTested++
 	      	} else {
 	      		this.setState({
@@ -176,7 +187,7 @@ class DarkPlayer extends Component {
 				duration: Math.floor(duration)
 			})
 		} 	
-		var t = setTimeout(() => this.checkTime(player), 500);
+		var t = setTimeout(() => this.checkTime(player), 1000);
 	}
 
 	render() {
@@ -188,7 +199,7 @@ class DarkPlayer extends Component {
 					<Info {...this.state}/>
 					<Button {...this.state} onClick={this.handleButtonClick}/>
 				</div>	
-				<TopBar invisible  {...this.state}/>
+				<BottomBar {...this.state} />
 			</div>
 		)
 	}
