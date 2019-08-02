@@ -3,14 +3,18 @@ import React, { Component } from "react";
 import { Pause, Play } from "./Buttons"
 import StatusPill from "./StatusPill.js";
 import videojs from "video.js";
-
+import qs from "query-string";
 import dayjs from "dayjs";
 import AdvancedFormat from 'dayjs/plugin/advancedFormat' // load on demand
 dayjs.extend(AdvancedFormat) // use plugin
 const { location = {} } = window;
 const { pathname = "/" } = location;
 
-const streamName = pathname.slice(1, pathname.length)
+let streamName = pathname.slice(1, pathname.length)
+const searchObject = qs.parse(location.search);
+if (!streamName || !streamName.length) {
+	streamName = searchObject && searchObject.stream;
+}
 let defaultSource = `http://127.0.0.1:8887/${streamName}/index.m3u8`;
 const testing = window.location.origin.includes("localhost");
 if (!testing) {
@@ -103,7 +107,7 @@ class DarkPlayer extends Component {
 	        this.startPlayer();
 	        break;
 	      case 404: 
-	      	if (this.streamsTested < 20) {
+	      	if (this.streamsTested < 5) {
 
 	      		setTimeout(this.testStream, 1000)
 	      		this.streamsTested++
@@ -171,12 +175,13 @@ class DarkPlayer extends Component {
 
 	handleButtonClick = () => {
 		const { isPlaying } = this.state
-		this.setState({
-			isPlaying: !isPlaying
-		})
 		if (this.player) {
+			this.setState({
+				isPlaying: !isPlaying
+			})
 			isPlaying ? this.player.pause() : this.player.play()
 		}
+
 	}
 
 	checkTime = () => {
@@ -220,7 +225,7 @@ class App extends Component {
 
 	render() {
 		return (
-			<div className="dark-mode-container centered">
+			<div className="centered">
 				<DarkPlayer videoNode={this.state.videoNode} />
 				<audio ref={this.setRef} className="video-js"></audio>
 			</div>
